@@ -1,45 +1,49 @@
 # Squoosh Tool
 
-基于 [Squoosh](https://github.com/GoogleChromeLabs/squoosh) 的桌面版图片压缩工具，支持 Windows 与 macOS。
+[中文说明](README.zh-CN.md) · **English**
 
-所有压缩都在本机完成，图片不会上传或传输到任何服务器。
+A desktop image compression tool based on [Squoosh](https://github.com/GoogleChromeLabs/squoosh), available for Windows and macOS.
 
-## 功能
+Everything runs on your own machine — images are never uploaded to any server, and the app works fully offline.
 
-- 支持 MozJPEG、WebP、AVIF、JPEG XL、OxiPNG、WP2、QOI 等编码格式
-- 单图对比压缩：左右并排预览压缩前后效果
-- 批量处理：一次导入多张图片，并发执行
-- 可设置并发数与 CPU 占用上限
-- 批量结果一键导出到指定文件夹
-- 简体中文 / English 界面切换
-- 完全离线运行，无需联网
+## Features
 
-## 下载
+- Supports MozJPEG, WebP, AVIF, JPEG XL, OxiPNG, WP2 and QOI
+- Single-image mode: compare the original and compressed result side by side
+- Batch mode: import many images at once, either by picking files or by importing a whole folder
+- Configurable concurrency and CPU usage cap
+- Export batch results to a folder with one click
+- Simplified Chinese / English interface
+- Fully offline, no telemetry
 
-前往 [Releases](https://github.com/evan-rio/squoosh-tool/releases) 下载，每个平台提供两种形式：
+## Download
 
-- **安装版**：安装到系统，带开始菜单 / 应用程序入口，可正常卸载
-- **便携版**：解压即用，不写入系统、不需要安装，适合放 U 盘随身携带
+See [Releases](https://github.com/evan-rio/squoosh-tool/releases). Every platform is available in two forms:
 
-| 平台 | 安装版 | 便携版 |
+- **Installer** — installs into the system, adds a Start Menu / Applications entry, can be uninstalled normally
+- **Portable** — unzip and run, writes nothing to the system and needs no installation
+
+| Platform | Installer | Portable |
 | --- | --- | --- |
-| Windows 64 位 | `SquooshTool-<版本>-windows-x64-setup.exe` | `SquooshTool-<版本>-windows-x64-portable.zip` |
-| macOS（Apple Silicon） | `SquooshTool-<版本>-macos-apple-silicon.dmg` | `SquooshTool-<版本>-macos-apple-silicon-portable.zip` |
-| macOS（Intel） | `SquooshTool-<版本>-macos-intel.dmg` | `SquooshTool-<版本>-macos-intel-portable.zip` |
+| Windows 64-bit | `SquooshTool-<version>-windows-x64-setup.exe` | `SquooshTool-<version>-windows-x64-portable.zip` |
+| macOS (Apple Silicon) | `SquooshTool-<version>-macos-apple-silicon.dmg` | `SquooshTool-<version>-macos-apple-silicon-portable.zip` |
+| macOS (Intel) | `SquooshTool-<version>-macos-intel.dmg` | `SquooshTool-<version>-macos-intel-portable.zip` |
 
-### 安装说明
+### Installation notes
 
-- **Windows**：运行安装程序即可。若系统缺少 WebView2 运行时，安装过程会自动下载（Windows 10 1803 以上及 Windows 11 通常已内置）。便携版解压后直接运行 `squoosh-tool.exe`。
-- **macOS**：当前安装包**未做代码签名**，首次打开时系统会提示「无法验证开发者」。请右键点击应用选择「打开」，或在终端执行：
+- **Windows** — just run the installer. If the WebView2 runtime is missing, the installer downloads it automatically (Windows 10 1803+ and Windows 11 already include it). For the portable build, unzip and run `squoosh-tool.exe`.
+- **macOS** — the builds are **not code-signed**, so macOS will warn that the developer cannot be verified the first time you open it. Right-click the app and choose **Open**, or run:
 
   ```sh
   xattr -dr com.apple.quarantine "/Applications/Squoosh Tool.app"
   ```
 
-## 免责声明
+  You only need to do this once.
 
-本项目为第三方衍生版本，与 Google 及 Google Chrome Labs 无任何关联。使用前请阅读 [DISCLAIMER.md](DISCLAIMER.md)。
+## Disclaimer
 
-## 许可
+This is a third-party fork. It is not affiliated with, sponsored by or endorsed by Google or Google Chrome Labs. It is provided "as is", without warranty of any kind. Please read [DISCLAIMER.md](DISCLAIMER.md) before use.
 
-本项目采用 Apache-2.0 许可，详见 [LICENSE](LICENSE)。原始版权归 Google LLC 及 Squoosh 贡献者所有。
+## License
+
+Licensed under Apache-2.0 — see [LICENSE](LICENSE). Original copyright belongs to Google LLC and the Squoosh contributors.

@@ -1,24 +1,26 @@
-# 免责声明
+# Disclaimer
 
-本项目（Squoosh Tool）是 [Squoosh](https://github.com/GoogleChromeLabs/squoosh) 的第三方衍生版本，与 Google LLC、Google Chrome Labs 及其关联方**没有任何关联**，也未获得其赞助、背书或支持。
+**English** · [中文](DISCLAIMER.zh-CN.md)
 
-## 使用风险
+Squoosh Tool is a third-party fork of [Squoosh](https://github.com/GoogleChromeLabs/squoosh). It is **not affiliated with, sponsored by, or endorsed by** Google LLC, Google Chrome Labs, or any of their affiliates.
 
-- 本软件按「现状」提供，不附带任何明示或暗示的担保，包括但不限于对适销性、特定用途适用性及不侵权的担保。
-- 使用本软件所产生的一切后果由使用者自行承担。作者不对任何直接或间接的损失、数据损坏、设备故障或业务中断承担责任。
-- 本软件未经过完整的跨平台测试，可能与部分系统环境或图片格式存在兼容性问题。
+## Use at your own risk
 
-## 数据处理
+- The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and non-infringement.
+- You are solely responsible for any consequences of using this software. The author accepts no liability for any direct or indirect loss, data corruption, hardware failure or business interruption.
+- This software has not been exhaustively tested across platforms and may have compatibility issues with some system environments or image formats.
 
-- 所有图片处理均在使用者本机完成，本软件不会上传、收集或传输任何图片数据。
-- 本软件不包含任何统计分析或用户行为上报功能。
-- 本软件不会主动访问网络（仅在你点击界面中的源码链接时，会调用系统默认浏览器打开该页面）。
+## Data handling
 
-## 使用者的责任
+- All image processing happens locally on your machine. This software does not upload, collect or transmit any image data.
+- This software contains no analytics or user-behaviour reporting of any kind.
+- This software does not access the network on its own. The only outbound action is opening the source-code link in your default browser, and only when you click it.
 
-- 请自行确认你拥有所处理图片的合法使用权，并遵守当地法律法规。
-- 请勿将本软件用于任何违法用途。
+## Your responsibilities
 
-## 许可与归属
+- Make sure you have the right to use the images you process, and comply with the laws that apply to you.
+- Do not use this software for any unlawful purpose.
 
-本软件采用 Apache-2.0 许可发布，详见 [LICENSE](LICENSE)。原始 Squoosh 项目的版权归 Google LLC 及其贡献者所有，本项目的修改部分由本项目作者维护。
+## License and attribution
+
+Released under the Apache-2.0 license — see [LICENSE](LICENSE). Copyright for the original Squoosh project belongs to Google LLC and the Squoosh contributors; the modifications in this project are maintained by this project's author.

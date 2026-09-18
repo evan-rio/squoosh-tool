@@ -118,6 +118,51 @@ jobs:
           draft: false
           fail_on_unmatched_files: false
           body: |
+            A desktop image compression tool based on [Squoosh](https://github.com/GoogleChromeLabs/squoosh).
+
+            Everything runs locally — images are never uploaded to any server, and the app works fully offline.
+
+            ## Features
+
+            - Supports MozJPEG, WebP, AVIF, JPEG XL, OxiPNG, WP2 and QOI
+            - Single-image mode: compare the original and compressed result side by side
+            - Batch mode: import many images at once, either by picking files or by importing a whole folder
+            - Configurable concurrency and CPU usage cap
+            - Export batch results to a folder with one click
+            - Simplified Chinese / English interface
+            - Fully offline, no telemetry
+
+            ## Download
+
+            Every platform is available in two forms:
+
+            - **Installer** — installs into the system, adds a Start Menu / Applications entry, can be uninstalled normally
+            - **Portable** — unzip and run, writes nothing to the system and needs no installation
+
+            | Platform | Installer | Portable |
+            | --- | --- | --- |
+            | Windows 64-bit | `SquooshTool-<version>-windows-x64-setup.exe` | `SquooshTool-<version>-windows-x64-portable.zip` |
+            | macOS (Apple Silicon) | `SquooshTool-<version>-macos-apple-silicon.dmg` | `SquooshTool-<version>-macos-apple-silicon-portable.zip` |
+            | macOS (Intel) | `SquooshTool-<version>-macos-intel.dmg` | `SquooshTool-<version>-macos-intel-portable.zip` |
+
+            ## Installation
+
+            - **Windows** — just run the installer. If the WebView2 runtime is missing, the installer downloads it automatically (Windows 10 1803+ and Windows 11 already include it). For the portable build, unzip and run `squoosh-tool.exe`.
+            - **macOS** — the builds are **not code-signed**, so macOS warns that the developer cannot be verified the first time you open the app. Right-click the app and choose **Open**, or run:
+
+              ```sh
+              xattr -dr com.apple.quarantine "/Applications/Squoosh Tool.app"
+              ```
+
+              You only need to do this once.
+
+            ## Disclaimer
+
+            This is a third-party fork, not affiliated with, sponsored by or endorsed by Google or Google Chrome Labs. It is provided "as is", without warranty of any kind. See [DISCLAIMER.md](https://github.com/evan-rio/squoosh-tool/blob/main/DISCLAIMER.md).
+
+            <details>
+            <summary>中文说明（点开查看）</summary>
+
             基于 [Squoosh](https://github.com/GoogleChromeLabs/squoosh) 的桌面版图片压缩工具。
 
             所有压缩都在本机完成，图片不会上传到任何服务器，可完全离线使用。
@@ -133,10 +178,7 @@ jobs:
 
             ## 下载
 
-            每个平台提供两种形式：
-
-            - **安装版**：安装到系统，带开始菜单 / 应用程序入口，可正常卸载
-            - **便携版**：解压即用，不写入系统、无需安装
+            每个平台提供安装版与便携免安装版：
 
             | 平台 | 安装版 | 便携版 |
             | --- | --- | --- |
@@ -146,16 +188,20 @@ jobs:
 
             ## 安装说明
 
-            - **Windows**：运行安装程序即可。若系统缺少 WebView2 运行时，安装过程会自动下载（Windows 10 1803 以上及 Windows 11 通常已内置）。便携版解压后直接运行 `squoosh-tool.exe`。
-            - **macOS**：安装包**未做代码签名**，首次打开会提示「无法验证开发者」。请右键点击应用选择「打开」，或在终端执行：
+            - **Windows** — 运行安装程序即可。若系统缺少 WebView2 运行时，安装过程会自动下载（Windows 10 1803 以上及 Windows 11 通常已内置）。便携版解压后直接运行 `squoosh-tool.exe`。
+            - **macOS** — 安装包**未做代码签名**，首次打开会提示「无法验证开发者」。请右键点击应用选择「打开」，或在终端执行：
 
               ```sh
               xattr -dr com.apple.quarantine "/Applications/Squoosh Tool.app"
               ```
 
+              只需放行一次。
+
             ## 免责声明
 
-            本软件为第三方衍生版本，与 Google 及 Google Chrome Labs 无任何关联，按「现状」提供且不附带任何担保。使用前请阅读仓库中的 [DISCLAIMER.md](https://github.com/evan-rio/squoosh-tool/blob/main/DISCLAIMER.md)。
+            本软件为第三方衍生版本，与 Google 及 Google Chrome Labs 无任何关联，按「现状」提供且不附带任何担保。详见 [DISCLAIMER.zh-CN.md](https://github.com/evan-rio/squoosh-tool/blob/main/DISCLAIMER.zh-CN.md)。
+
+            </details>
           files: |
             SquooshTool-*-portable.zip
             SquooshTool-*.dmg
