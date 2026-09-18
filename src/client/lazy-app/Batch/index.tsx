@@ -87,6 +87,10 @@ function ratioLabel(original: number, encoded: number): string {
   return `${Math.round((encoded / original) * 100)}%`;
 }
 
+function itemKey(file: File): string {
+  return `${file.name}|${file.size}|${file.lastModified}`;
+}
+
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|avif|jxl|qoi|bmp|gif)$/i;
 
 function isImage(file: File): boolean {
@@ -160,7 +164,7 @@ export default class Batch extends Component<Props, State> {
   componentDidUpdate(prevProps: Props) {
     if (prevProps.files === this.props.files) return;
     // Files dropped while this screen is open start a fresh batch.
-    this.replaceFiles(this.props.files);
+    this.importFiles(this.props.files);
   }
 
   private async resolveAvailableEncoders(): Promise<EncoderType[]> {
@@ -196,18 +200,39 @@ export default class Batch extends Component<Props, State> {
   };
 
   /**
-   * Importing replaces the list: a batch is one set of images, so results for
-   * the previous set are dropped instead of being silently mixed in.
+   * While nothing has been processed yet the list only grows, so images can be
+   * gathered from several folders before a run starts. Once a run has produced
+   * (or started producing) results, importing starts a fresh batch rather than
+   * mixing new files in with old results.
    */
-  private replaceFiles = (files: File[]) => {
+  private importFiles = (files: File[]) => {
     if (!files.length) return;
-    this.runId++;
-    this.revokeUrls(this.state.items);
-    this.setState({
-      items: makeItems(files),
-      running: false,
-      settingsDirty: true,
-      importMenuOpen: false,
+
+    const allPending = this.state.items.every(
+      (item) => item.status === 'queued',
+    );
+
+    if (!allPending) {
+      this.runId++;
+      this.revokeUrls(this.state.items);
+      this.setState({
+        items: makeItems(files),
+        running: false,
+        settingsDirty: true,
+        importMenuOpen: false,
+      });
+      return;
+    }
+
+    this.setState(({ items }) => {
+      const known = new Set(items.map((item) => itemKey(item.file)));
+      const additions = files
+        .filter((file) => !known.has(itemKey(file)))
+        .map((file) => ({ file, status: 'queued' as const }));
+      return {
+        items: additions.length ? [...items, ...additions] : items,
+        importMenuOpen: false,
+      };
     });
   };
 
@@ -230,7 +255,7 @@ export default class Batch extends Component<Props, State> {
 
   private onFileInputChange = (event: Event) => {
     const input = event.target as HTMLInputElement;
-    if (input.files) this.replaceFiles(Array.from(input.files));
+    if (input.files) this.importFiles(Array.from(input.files));
     input.value = '';
   };
 
@@ -248,7 +273,7 @@ export default class Batch extends Component<Props, State> {
       }
       files.sort((a, b) => a.name.localeCompare(b.name));
       if (files.length) {
-        this.replaceFiles(files);
+        this.importFiles(files);
       } else {
         this.props.showSnack(t('batch.noImagesInFolder'));
       }

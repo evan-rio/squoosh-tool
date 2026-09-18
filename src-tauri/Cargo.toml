@@ -1,6 +1,6 @@
 [package]
 name = "squoosh-desktop"
-version = "2.0.2"
+version = "2.0.3"
 description = "Squoosh Tool — desktop image compression app"
 authors = ["evan-rio"]
 edition = "2021"

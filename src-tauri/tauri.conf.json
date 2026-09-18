@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Squoosh Tool",
   "mainBinaryName": "squoosh-tool",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "identifier": "app.squoosh.desktop",
   "build": {
     "frontendDist": "../build"
