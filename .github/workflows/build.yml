@@ -3,6 +3,10 @@ name: Build
 on:
   push:
     tags: ['v*']
+    # Pushing to this branch runs the full matrix (including the macOS builds
+    # that can't be produced on a Windows/Linux machine) and leaves the
+    # bundles as downloadable artifacts.
+    branches: ['ci']
   workflow_dispatch:
 
 permissions:
@@ -16,12 +20,15 @@ jobs:
         include:
           - runner: macos-latest
             target: aarch64-apple-darwin
+            arch: arm64
             bundles: app,dmg
           - runner: macos-13
             target: x86_64-apple-darwin
+            arch: x64
             bundles: app,dmg
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
+            arch: x64
             bundles: nsis
 
     runs-on: ${{ matrix.runner }}
@@ -48,26 +55,48 @@ jobs:
       - name: Build frontend
         run: npm run build:desktop
 
-      - name: Build app (artifacts only)
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      - name: Build bundles
         run: npx tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Resolve version
+        shell: bash
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Package portable build (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app="src-tauri/target/${{ matrix.target }}/release/bundle/macos/Squoosh Tool.app"
+          ditto -c -k --sequesterRsrc --keepParent "$app" \
+            "SquooshTool-${VERSION}-macos-${{ matrix.arch }}-portable.zip"
+
+      - name: Package portable build (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path "src-tauri/target/${{ matrix.target }}/release/squoosh-tool.exe" `
+            -DestinationPath "SquooshTool-$env:VERSION-windows-x64-portable.zip"
 
       - name: Upload artifacts
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
           name: squoosh-tool-${{ matrix.target }}
-          path: src-tauri/target/${{ matrix.target }}/release/bundle/**
+          path: |
+            SquooshTool-*-portable.zip
+            src-tauri/target/${{ matrix.target }}/release/bundle/**
           if-no-files-found: warn
 
-      - name: Build and publish release
+      - name: Publish release
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
-          tagName: ${{ github.ref_name }}
-          releaseName: Squoosh Tool ${{ github.ref_name }}
-          releaseDraft: false
-          prerelease: false
+          tag_name: ${{ github.ref_name }}
+          name: Squoosh Tool ${{ github.ref_name }}
+          draft: false
+          fail_on_unmatched_files: false
+          files: |
+            SquooshTool-*-portable.zip
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe

@@ -16,17 +16,20 @@
 
 ## 下载
 
-前往 [Releases](https://github.com/evan-rio/squoosh-tool/releases) 下载对应平台的安装包。
+前往 [Releases](https://github.com/evan-rio/squoosh-tool/releases) 下载，每个平台提供两种形式：
 
-| 平台 | 文件 |
-| --- | --- |
-| Windows | `Squoosh Tool_x.y.z_x64-setup.exe` |
-| macOS (Apple Silicon) | `Squoosh Tool_x.y.z_aarch64.dmg` |
-| macOS (Intel) | `Squoosh Tool_x.y.z_x64.dmg` |
+- **安装版**：安装到系统，带开始菜单 / 应用程序入口，可正常卸载
+- **便携版**：解压即用，不写入系统、不需要安装，适合放 U 盘随身携带
+
+| 平台 | 安装版 | 便携版 |
+| --- | --- | --- |
+| Windows x64 | `Squoosh Tool_x.y.z_x64-setup.exe` | `SquooshTool-x.y.z-windows-x64-portable.zip` |
+| macOS（Apple Silicon） | `Squoosh Tool_x.y.z_aarch64.dmg` | `SquooshTool-x.y.z-macos-arm64-portable.zip` |
+| macOS（Intel） | `Squoosh Tool_x.y.z_x64.dmg` | `SquooshTool-x.y.z-macos-x64-portable.zip` |
 
 ### 安装说明
 
-- **Windows**：运行安装程序即可。若系统缺少 WebView2 运行时，安装过程会自动下载（Windows 10 1803 以上及 Windows 11 通常已内置）。
+- **Windows**：运行安装程序即可。若系统缺少 WebView2 运行时，安装过程会自动下载（Windows 10 1803 以上及 Windows 11 通常已内置）。便携版解压后直接运行 `squoosh-tool.exe`。
 - **macOS**：当前安装包**未做代码签名**，首次打开时系统会提示「无法验证开发者」。请右键点击应用选择「打开」，或在终端执行：
 
   ```sh

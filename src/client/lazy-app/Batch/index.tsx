@@ -50,6 +50,7 @@ interface State {
   settingsDirty: boolean;
   exporting: boolean;
   exportDirName?: string;
+  importMenuOpen: boolean;
 }
 
 function cores(): number {
@@ -86,8 +87,10 @@ function ratioLabel(original: number, encoded: number): string {
   return `${Math.round((encoded / original) * 100)}%`;
 }
 
-function itemKey(file: File): string {
-  return `${file.name}|${file.size}|${file.lastModified}`;
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|avif|jxl|qoi|bmp|gif)$/i;
+
+function isImage(file: File): boolean {
+  return file.type.startsWith('image/') || IMAGE_EXTENSIONS.test(file.name);
 }
 
 function makeItems(files: File[]): BatchItem[] {
@@ -136,6 +139,7 @@ export default class Batch extends Component<Props, State> {
     // Nothing runs until the user asks, so the result is stale from the start.
     settingsDirty: true,
     exporting: false,
+    importMenuOpen: false,
   };
 
   componentDidMount() {
@@ -151,8 +155,8 @@ export default class Batch extends Component<Props, State> {
 
   componentDidUpdate(prevProps: Props) {
     if (prevProps.files === this.props.files) return;
-    // Files dropped while this screen is open are added to the batch.
-    this.addFiles(this.props.files);
+    // Files dropped while this screen is open start a fresh batch.
+    this.replaceFiles(this.props.files);
   }
 
   private async resolveAvailableEncoders(): Promise<EncoderType[]> {
@@ -187,25 +191,66 @@ export default class Batch extends Component<Props, State> {
     el.style.setProperty('--horizontal-padding', '15px');
   };
 
-  private addFiles = (files: File[]) => {
-    this.setState(({ items }) => {
-      const known = new Set(items.map((item) => itemKey(item.file)));
-      const additions = files
-        .filter((file) => !known.has(itemKey(file)))
-        .map((file) => ({ file, status: 'queued' as const }));
-      if (!additions.length) return null;
-      return { items: [...items, ...additions] };
+  /**
+   * Importing replaces the list: a batch is one set of images, so results for
+   * the previous set are dropped instead of being silently mixed in.
+   */
+  private replaceFiles = (files: File[]) => {
+    if (!files.length) return;
+    this.runId++;
+    this.revokeUrls(this.state.items);
+    this.setState({
+      items: makeItems(files),
+      running: false,
+      settingsDirty: true,
+      importMenuOpen: false,
     });
   };
 
-  private onAddFilesClick = () => {
+  private toggleImportMenu = (event: Event) => {
+    event.stopPropagation();
+    const open = !this.state.importMenuOpen;
+    this.setState({ importMenuOpen: open });
+    if (!open) return;
+    const close = () => {
+      this.setState({ importMenuOpen: false });
+      document.removeEventListener('click', close);
+    };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  };
+
+  private onPickImagesClick = () => {
+    this.setState({ importMenuOpen: false });
     this.fileInput!.click();
   };
 
   private onFileInputChange = (event: Event) => {
     const input = event.target as HTMLInputElement;
-    if (input.files) this.addFiles(Array.from(input.files));
+    if (input.files) this.replaceFiles(Array.from(input.files));
     input.value = '';
+  };
+
+  private onPickFolderClick = async () => {
+    this.setState({ importMenuOpen: false });
+    const picker = directoryPicker();
+    if (!picker) return;
+    try {
+      const dir = await picker({ mode: 'read' });
+      const files: File[] = [];
+      for await (const handle of (dir as any).values()) {
+        if (handle.kind !== 'file') continue;
+        const file: File = await handle.getFile();
+        if (isImage(file)) files.push(file);
+      }
+      files.sort((a, b) => a.name.localeCompare(b.name));
+      if (files.length) {
+        this.replaceFiles(files);
+      } else {
+        this.props.showSnack(t('batch.noImagesInFolder'));
+      }
+    } catch {
+      // Cancelled — not an error.
+    }
   };
 
   private startRun = (resetAll: boolean) => () => {
@@ -469,6 +514,7 @@ export default class Batch extends Component<Props, State> {
       settingsDirty,
       exporting,
       exportDirName,
+      importMenuOpen,
     } = this.state;
 
     const OptionsComponent = (
@@ -506,18 +552,6 @@ export default class Batch extends Component<Props, State> {
             ← {t('editor.back')}
           </button>
           <h1 style={styles.title}>{t('batch.title')}</h1>
-          <button style={styles.addButton} onClick={this.onAddFilesClick}>
-            + {t('batch.addFiles')}
-          </button>
-          <input
-            ref={(el) => {
-              this.fileInput = el as HTMLInputElement;
-            }}
-            type="file"
-            multiple
-            style={{ display: 'none' }}
-            onChange={this.onFileInputChange}
-          />
           <div style={styles.headerSpacer} />
           <LocaleSelect />
         </header>
@@ -629,6 +663,37 @@ export default class Batch extends Component<Props, State> {
               >
                 {exporting ? t('batch.exporting') : t('batch.export')}
               </button>
+
+              <div style={styles.importWrap}>
+                <button style={styles.importButton} onClick={this.toggleImportMenu}>
+                  + {t('batch.import')}
+                </button>
+                {importMenuOpen ? (
+                  <div style={styles.importMenu}>
+                    <button
+                      style={styles.importMenuItem}
+                      onClick={this.onPickImagesClick}
+                    >
+                      {t('batch.pickImages')}
+                    </button>
+                    <button
+                      style={styles.importMenuItem}
+                      onClick={this.onPickFolderClick}
+                    >
+                      {t('batch.pickFolder')}
+                    </button>
+                  </div>
+                ) : null}
+                <input
+                  ref={(el) => {
+                    this.fileInput = el as HTMLInputElement;
+                  }}
+                  type="file"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={this.onFileInputChange}
+                />
+              </div>
             </div>
 
             <div style={styles.summary}>
@@ -711,14 +776,6 @@ const styles: Record<string, any> = {
     padding: '6px 12px',
   },
   title: { fontSize: '20px', margin: 0 },
-  addButton: {
-    font: 'inherit',
-    cursor: 'pointer',
-    border: '1px dashed rgba(0,0,0,0.25)',
-    borderRadius: '6px',
-    background: '#fff',
-    padding: '6px 12px',
-  },
   headerSpacer: { flex: 1 },
   body: { flex: '1 1 auto', display: 'flex', minHeight: 0 },
   sidebar: {
@@ -800,6 +857,38 @@ const styles: Record<string, any> = {
     whiteSpace: 'nowrap',
   },
   exportButton: { flex: '0 0 auto', minWidth: '96px' },
+  importWrap: { position: 'relative', flex: '0 0 auto' },
+  importButton: {
+    font: 'inherit',
+    cursor: 'pointer',
+    border: '1px dashed rgba(0,0,0,0.3)',
+    borderRadius: '6px',
+    background: '#fff',
+    padding: '9px 14px',
+    whiteSpace: 'nowrap',
+  },
+  importMenu: {
+    position: 'absolute',
+    top: 'calc(100% + 4px)',
+    right: 0,
+    zIndex: 10,
+    minWidth: '160px',
+    display: 'flex',
+    flexDirection: 'column',
+    background: '#fff',
+    border: '1px solid rgba(0,0,0,0.15)',
+    borderRadius: '6px',
+    boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
+    overflow: 'hidden',
+  },
+  importMenuItem: {
+    font: 'inherit',
+    textAlign: 'left',
+    cursor: 'pointer',
+    border: 'none',
+    background: 'transparent',
+    padding: '10px 14px',
+  },
   summary: {
     display: 'flex',
     flexWrap: 'wrap',
