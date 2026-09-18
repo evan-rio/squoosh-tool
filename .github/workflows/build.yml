@@ -20,15 +20,15 @@ jobs:
         include:
           - runner: macos-latest
             target: aarch64-apple-darwin
-            arch: arm64
+            label: macos-apple-silicon
             bundles: app,dmg
           - runner: macos-13
             target: x86_64-apple-darwin
-            arch: x64
+            label: macos-intel
             bundles: app,dmg
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
-            arch: x64
+            label: windows-x64
             bundles: nsis
 
     runs-on: ${{ matrix.runner }}
@@ -68,7 +68,7 @@ jobs:
         run: |
           app="src-tauri/target/${{ matrix.target }}/release/bundle/macos/Squoosh Tool.app"
           ditto -c -k --sequesterRsrc --keepParent "$app" \
-            "SquooshTool-${VERSION}-macos-${{ matrix.arch }}-portable.zip"
+            "SquooshTool-${VERSION}-${{ matrix.label }}-portable.zip"
 
       - name: Package portable build (Windows)
         if: runner.os == 'Windows'
@@ -76,16 +76,35 @@ jobs:
         run: |
           Compress-Archive `
             -Path "src-tauri/target/${{ matrix.target }}/release/squoosh-tool.exe" `
-            -DestinationPath "SquooshTool-$env:VERSION-windows-x64-portable.zip"
+            -DestinationPath "SquooshTool-$env:VERSION-${{ matrix.label }}-portable.zip"
+
+      # Tauri names bundles after the build target (e.g. `…_aarch64.dmg`).
+      # Ship them under plain-language names instead.
+      - name: Rename bundles
+        shell: bash
+        run: |
+          bundle="src-tauri/target/${{ matrix.target }}/release/bundle"
+          if [ -d "$bundle/dmg" ]; then
+            for f in "$bundle"/dmg/*.dmg; do
+              [ -e "$f" ] && cp "$f" "SquooshTool-${VERSION}-${{ matrix.label }}.dmg"
+            done
+          fi
+          if [ -d "$bundle/nsis" ]; then
+            for f in "$bundle"/nsis/*.exe; do
+              [ -e "$f" ] && cp "$f" "SquooshTool-${VERSION}-${{ matrix.label }}-setup.exe"
+            done
+          fi
+          ls -la SquooshTool-* || true
 
       - name: Upload artifacts
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
-          name: squoosh-tool-${{ matrix.target }}
+          name: SquooshTool-${{ matrix.label }}
           path: |
             SquooshTool-*-portable.zip
-            src-tauri/target/${{ matrix.target }}/release/bundle/**
+            SquooshTool-*.dmg
+            SquooshTool-*-setup.exe
           if-no-files-found: warn
 
       - name: Publish release
@@ -119,9 +138,9 @@ jobs:
 
             | 平台 | 安装版 | 便携版 |
             | --- | --- | --- |
-            | Windows x64 | `Squoosh Tool_*_x64-setup.exe` | `SquooshTool-*-windows-x64-portable.zip` |
-            | macOS（Apple Silicon） | `*.dmg`（aarch64） | `SquooshTool-*-macos-arm64-portable.zip` |
-            | macOS（Intel） | `*.dmg`（x64） | `SquooshTool-*-macos-x64-portable.zip` |
+            | Windows 64 位 | `SquooshTool-<版本>-windows-x64-setup.exe` | `SquooshTool-<版本>-windows-x64-portable.zip` |
+            | macOS（Apple Silicon） | `SquooshTool-<版本>-macos-apple-silicon.dmg` | `SquooshTool-<版本>-macos-apple-silicon-portable.zip` |
+            | macOS（Intel） | `SquooshTool-<版本>-macos-intel.dmg` | `SquooshTool-<版本>-macos-intel-portable.zip` |
 
             ## 安装说明
 
@@ -137,5 +156,5 @@ jobs:
             本软件为第三方衍生版本，与 Google 及 Google Chrome Labs 无任何关联，按「现状」提供且不附带任何担保。使用前请阅读仓库中的 [DISCLAIMER.md](https://github.com/evan-rio/squoosh-tool/blob/main/DISCLAIMER.md)。
           files: |
             SquooshTool-*-portable.zip
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            SquooshTool-*.dmg
+            SquooshTool-*-setup.exe

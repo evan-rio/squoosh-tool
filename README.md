@@ -23,9 +23,9 @@
 
 | 平台 | 安装版 | 便携版 |
 | --- | --- | --- |
-| Windows x64 | `Squoosh Tool_x.y.z_x64-setup.exe` | `SquooshTool-x.y.z-windows-x64-portable.zip` |
-| macOS（Apple Silicon） | `Squoosh Tool_x.y.z_aarch64.dmg` | `SquooshTool-x.y.z-macos-arm64-portable.zip` |
-| macOS（Intel） | `Squoosh Tool_x.y.z_x64.dmg` | `SquooshTool-x.y.z-macos-x64-portable.zip` |
+| Windows 64 位 | `SquooshTool-<版本>-windows-x64-setup.exe` | `SquooshTool-<版本>-windows-x64-portable.zip` |
+| macOS（Apple Silicon） | `SquooshTool-<版本>-macos-apple-silicon.dmg` | `SquooshTool-<版本>-macos-apple-silicon-portable.zip` |
+| macOS（Intel） | `SquooshTool-<版本>-macos-intel.dmg` | `SquooshTool-<版本>-macos-intel-portable.zip` |
 
 ### 安装说明
 
