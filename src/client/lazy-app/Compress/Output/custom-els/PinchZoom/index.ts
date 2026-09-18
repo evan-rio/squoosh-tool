@@ -28,6 +28,16 @@ interface SetTransformOpts extends ChangeOptions {
   y?: number;
 }
 
+/**
+ * WebKit reports a trackpad pinch with these non-standard gesture events,
+ * where `scale` is cumulative since `gesturestart`.
+ */
+interface WebKitGestureEvent extends Event {
+  scale?: number;
+  clientX?: number;
+  clientY?: number;
+}
+
 type ScaleRelativeToValues = 'container' | 'content';
 
 export interface ScaleToOpts extends ChangeOptions {
@@ -91,6 +101,8 @@ export default class PinchZoom extends HTMLElement {
   private _positioningEl?: Element;
   // Current transform.
   private _transform: SVGMatrix = createMatrix();
+  /** Cumulative scale of the in-progress WebKit pinch gesture. */
+  private _gestureScale = 1;
 
   constructor() {
     super();
@@ -126,6 +138,13 @@ export default class PinchZoom extends HTMLElement {
     });
 
     this.addEventListener('wheel', (event) => this._onWheel(event));
+    // Chromium reports a trackpad pinch as a ctrl-modified wheel event, which
+    // the listener above handles. WebKit (macOS) uses gesture events instead.
+    this.addEventListener('gesturestart', (event) => this._onGestureStart(event));
+    this.addEventListener('gesturechange', (event) =>
+      this._onGestureChange(event),
+    );
+    this.addEventListener('gestureend', (event) => this._onGestureEnd(event));
   }
 
   connectedCallback() {
@@ -294,6 +313,37 @@ export default class PinchZoom extends HTMLElement {
 
     // Do a bounds check
     this.setTransform({ allowChangeEvent: true });
+  }
+
+  private _onGestureStart(event: Event) {
+    // Without this the webview zooms the whole page instead of the image.
+    event.preventDefault();
+    this._gestureScale = 1;
+  }
+
+  private _onGestureChange(event: Event) {
+    if (!this._positioningEl) return;
+    event.preventDefault();
+
+    const gesture = event as WebKitGestureEvent;
+    const scale = gesture.scale ?? 1;
+    if (!scale || !Number.isFinite(scale)) return;
+
+    const currentRect = this._positioningEl.getBoundingClientRect();
+    const scaleDiff = scale / this._gestureScale;
+    this._gestureScale = scale;
+
+    this._applyChange({
+      scaleDiff,
+      originX: (gesture.clientX || 0) - currentRect.left,
+      originY: (gesture.clientY || 0) - currentRect.top,
+      allowChangeEvent: true,
+    });
+  }
+
+  private _onGestureEnd(event: Event) {
+    event.preventDefault();
+    this._gestureScale = 1;
   }
 
   private _onWheel(event: WheelEvent) {
