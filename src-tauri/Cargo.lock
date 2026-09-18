@@ -2952,7 +2952,7 @@ dependencies = [
 
 [[package]]
 name = "squoosh-desktop"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "include_dir",
  "serde",
