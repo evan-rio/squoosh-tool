@@ -22,7 +22,9 @@ jobs:
             target: aarch64-apple-darwin
             label: macos-apple-silicon
             bundles: app,dmg
-          - runner: macos-13
+          # Built on the same arm64 runner: GitHub's Intel macOS runners
+          # (macos-13) are scarce and being retired, so we cross-compile.
+          - runner: macos-latest
             target: x86_64-apple-darwin
             label: macos-intel
             bundles: app,dmg
