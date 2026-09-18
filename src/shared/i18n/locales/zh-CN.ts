@@ -5,6 +5,7 @@ export default {
   'common.undo': '撤销',
   'common.reload': '重新加载',
   'common.language': '语言',
+  'noscript.message': '初始化失败：本应用需要启用 JavaScript，但你的浏览器已禁用它。',
 
   // Landing page
   'intro.drop': '拖入',
@@ -43,6 +44,7 @@ export default {
   'editor.snack.leftSaved': '已保存左侧设置',
   'editor.snack.rightSaved': '已保存右侧设置',
   'editor.snack.leftImported': '已导入左侧设置',
+  'editor.snack.rightImported': '已导入右侧设置',
   'editor.error.decode': '源图解码失败：{error}',
   'editor.error.preprocess': '预处理失败：{error}',
   'editor.error.process': '处理失败：{error}',
@@ -77,7 +79,7 @@ export default {
   'batch.exporting': '导出中…',
   'batch.noFolder': '未选择文件夹',
   'batch.chooseFolder': '选择文件夹',
-  'batch.folderUnsupported': '当前环境不支持选择文件夹，将改为打包 ZIP',
+  'batch.zipFallback': '无法打开文件夹选择器，已改为打包 ZIP 下载',
   'batch.exported': '已导出 {count} 个文件到「{dir}」',
   'batch.exportFailed': '导出失败',
   'batch.import': '导入图片',

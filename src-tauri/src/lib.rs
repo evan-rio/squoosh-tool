@@ -1,11 +1,26 @@
+use std::io::Read;
+use std::path::PathBuf;
+use std::sync::{Mutex, OnceLock};
 use std::thread;
 
 use include_dir::{include_dir, Dir};
+use tauri::Manager;
+use tauri_plugin_dialog::DialogExt;
 use tiny_http::{Header, Response, Server};
 
 /// The built frontend, embedded into the binary at compile time.
 /// `build/` is produced by `npm run build:desktop` before this crate compiles.
 static DIST: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../build");
+
+/// Set once the app is up, so the loopback server can open native dialogs.
+static APP: OnceLock<tauri::AppHandle> = OnceLock::new();
+/// Folder chosen for exports, remembered on the Rust side so the webview never
+/// has to hold — or be trusted with — an arbitrary write path.
+static EXPORT_DIR: OnceLock<Mutex<Option<PathBuf>>> = OnceLock::new();
+
+fn export_dir() -> &'static Mutex<Option<PathBuf>> {
+    EXPORT_DIR.get_or_init(|| Mutex::new(None))
+}
 
 fn content_type(path: &str) -> &'static str {
     match path.rsplit('.').next().unwrap_or("") {
@@ -49,19 +64,22 @@ fn percent_decode(input: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
+fn query_param(request_url: &str, key: &str) -> Option<String> {
+    let query = request_url.split_once('?')?.1;
+    let prefix = format!("{key}=");
+    query
+        .split('&')
+        .find_map(|pair| pair.strip_prefix(&prefix).map(str::to_owned))
+}
+
 /// Pulls a web URL out of an `/__open?url=…` request, rejecting other schemes.
 fn requested_url(request_url: &str) -> Option<String> {
-    let query = request_url.split_once('?')?.1;
-    for pair in query.split('&') {
-        if let Some(value) = pair.strip_prefix("url=") {
-            let url = percent_decode(value);
-            if url.starts_with("https://") || url.starts_with("http://") {
-                return Some(url);
-            }
-            return None;
-        }
+    let url = percent_decode(&query_param(request_url, "url")?);
+    if url.starts_with("https://") || url.starts_with("http://") {
+        Some(url)
+    } else {
+        None
     }
-    None
 }
 
 /// Hands a URL to the system browser.
@@ -79,6 +97,27 @@ fn open_in_browser(url: &str) {
     #[cfg(all(unix, not(target_os = "macos")))]
     {
         let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+    }
+}
+
+/// Opens the native folder picker. Safe off the main thread — this is the same
+/// context Tauri commands run in.
+fn pick_export_dir() -> Option<PathBuf> {
+    let app = APP.get()?;
+    let path = app.dialog().file().blocking_pick_folder()?.into_path().ok()?;
+    *export_dir().lock().unwrap() = Some(path.clone());
+    Some(path)
+}
+
+/// Writes one exported file into the remembered folder. The name is sanitised
+/// so a request can never escape that folder.
+fn write_into_export_dir(name: &str, bytes: &[u8]) -> bool {
+    if name.is_empty() || name.contains('/') || name.contains('\\') || name.contains("..") {
+        return false;
+    }
+    match export_dir().lock().unwrap().clone() {
+        Some(dir) => std::fs::write(dir.join(name), bytes).is_ok(),
+        None => false,
     }
 }
 
@@ -100,16 +139,51 @@ fn start_server() -> u16 {
         .port();
 
     thread::spawn(move || {
-        for request in server.incoming_requests() {
-            let path = request.url().split('?').next().unwrap_or("/");
+        for mut request in server.incoming_requests() {
+            let url = request.url().to_owned();
+            let path = url.split('?').next().unwrap_or("/").to_owned();
+            let path = path.as_str();
 
             // External links are opened by the system browser so the app's own
             // window keeps showing the app.
             if path == "/__open" {
-                if let Some(url) = requested_url(request.url()) {
+                if let Some(url) = requested_url(&url) {
                     open_in_browser(&url);
                 }
                 let _ = request.respond(Response::empty(204));
+                continue;
+            }
+
+            // Native folder picker for the batch export target.
+            if path == "/__pick-folder" {
+                let body = pick_export_dir()
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .unwrap_or_default();
+                let _ = request.respond(
+                    Response::from_string(body)
+                        .with_header(header("Content-Type", "text/plain; charset=utf-8"))
+                        .with_header(header("Cache-Control", "no-store")),
+                );
+                continue;
+            }
+
+            // Receives one encoded image; the body is the raw file.
+            if path == "/__write" {
+                let name = query_param(&url, "name")
+                    .map(|v| percent_decode(&v))
+                    .unwrap_or_default();
+                let mut bytes = Vec::new();
+                let read_ok = request
+                    .as_reader()
+                    .take(256 * 1024 * 1024)
+                    .read_to_end(&mut bytes)
+                    .is_ok();
+                let status = if read_ok && write_into_export_dir(&name, &bytes) {
+                    204
+                } else {
+                    400
+                };
+                let _ = request.respond(Response::empty(status));
                 continue;
             }
 
@@ -147,7 +221,10 @@ pub fn run() {
     let port = start_server();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
+            APP.set(app.handle().clone()).ok();
+
             let url = format!("http://127.0.0.1:{port}/");
             tauri::WebviewWindowBuilder::new(
                 app,

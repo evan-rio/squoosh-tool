@@ -21,6 +21,7 @@ import { escapeStyleScriptContent, siteOrigin } from 'static-build/utils';
 import Intro from 'shared/prerendered-app/Intro';
 import snackbarCss from 'css:../../../shared/custom-els/snack-bar/styles.css';
 import * as snackbarStyle from '../../../shared/custom-els/snack-bar/styles.css';
+import { t } from 'shared/i18n';
 
 interface Props {}
 
@@ -89,12 +90,9 @@ const Index: FunctionalComponent<Props> = () => (
               aria-atomic="true"
               aria-hidden="false"
             >
-              <div class={snackbarStyle.text}>
-                Initialization error: This site requires JavaScript, which is
-                disabled in your browser.
-              </div>
+              <div class={snackbarStyle.text}>{t('noscript.message')}</div>
               <a class={snackbarStyle.button} href="/">
-                reload
+                {t('common.reload')}
               </a>
             </div>
           </snack-bar>

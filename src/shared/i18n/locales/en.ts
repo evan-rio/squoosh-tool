@@ -6,6 +6,8 @@ export default {
   'common.undo': 'Undo',
   'common.reload': 'Reload',
   'common.language': 'Language',
+  'noscript.message':
+    'Initialization error: this app requires JavaScript, which is disabled in your browser.',
 
   // Landing page
   'intro.drop': 'Drop',
@@ -44,6 +46,7 @@ export default {
   'editor.snack.leftSaved': 'Left side settings saved',
   'editor.snack.rightSaved': 'Right side settings saved',
   'editor.snack.leftImported': 'Left side settings imported',
+  'editor.snack.rightImported': 'Right side settings imported',
   'editor.error.decode': 'Source decoding error: {error}',
   'editor.error.preprocess': 'Preprocessing error: {error}',
   'editor.error.process': 'Processing error: {error}',
@@ -80,7 +83,7 @@ export default {
   'batch.exporting': 'Exporting…',
   'batch.noFolder': 'No folder selected',
   'batch.chooseFolder': 'Choose folder',
-  'batch.folderUnsupported': 'Folder picking unavailable — saves a ZIP instead',
+  'batch.zipFallback': 'Could not open the folder picker — saved a ZIP instead',
   'batch.exported': 'Exported {count} files to “{dir}”',
   'batch.exportFailed': 'Export failed',
   'batch.import': 'Import',

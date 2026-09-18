@@ -112,6 +112,9 @@ function directoryPicker(): ((opts: unknown) => Promise<any>) | undefined {
   return (window as any).showDirectoryPicker;
 }
 
+/** Outcome of asking for an export folder. */
+type PickResult = 'native' | 'browser' | 'cancelled' | 'unavailable';
+
 /**
  * Batch mode: several images encoded across a pool of workers.
  *
@@ -125,6 +128,7 @@ export default class Batch extends Component<Props, State> {
   private runId = 0;
   private fileInput?: HTMLInputElement;
   private exportDir?: any;
+  private exportMode: 'none' | 'native' | 'browser' = 'none';
 
   state: State = {
     encoderTypes: [DEFAULT_ENCODER],
@@ -396,17 +400,56 @@ export default class Batch extends Component<Props, State> {
     });
   };
 
-  private pickExportDir = async (): Promise<any | undefined> => {
+  /**
+   * Asks the desktop shell for a folder first — that gives a native dialog and
+   * a real path. Falls back to the browser's File System Access API, and
+   * reports when neither is available so the caller can offer a ZIP instead.
+   */
+  private pickExportDir = async (): Promise<PickResult> => {
+    try {
+      const res = await fetch('/__pick-folder');
+      if (res.status === 404 || res.status === 501) return 'unavailable';
+      if (!res.ok) return 'unavailable';
+      const path = (await res.text()).trim();
+      if (!path) return 'cancelled';
+      this.exportMode = 'native';
+      this.setState({ exportDirName: path });
+      return 'native';
+    } catch {
+      // Not running inside the desktop shell — try the browser API below.
+    }
+
     const picker = directoryPicker();
-    if (!picker) return undefined;
+    if (!picker) return 'unavailable';
     try {
       const handle = await picker({ mode: 'readwrite' });
+      this.exportMode = 'browser';
       this.exportDir = handle;
       this.setState({ exportDirName: handle.name });
-      return handle;
+      return 'browser';
     } catch {
-      // Cancelled — not an error.
-      return undefined;
+      return 'cancelled';
+    }
+  };
+
+  private exportViaShell = async (items: BatchItem[]) => {
+    for (const item of items) {
+      const res = await fetch(
+        `/__write?name=${encodeURIComponent(item.result!.name)}`,
+        { method: 'POST', body: item.result! },
+      );
+      if (!res.ok) throw new Error('write failed');
+    }
+  };
+
+  private exportViaBrowser = async (items: BatchItem[]) => {
+    for (const item of items) {
+      const fileHandle = await this.exportDir.getFileHandle(item.result!.name, {
+        create: true,
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write(item.result!);
+      await writable.close();
     }
   };
 
@@ -419,28 +462,30 @@ export default class Batch extends Component<Props, State> {
       return;
     }
 
-    let dir = this.exportDir;
-    if (!dir) {
-      dir = await this.pickExportDir();
-      // No File System Access API (or the user cancelled): fall back to a ZIP.
-      if (!dir) {
-        if (!directoryPicker()) await this.downloadZip();
+    let mode = this.exportMode;
+    if (mode === 'none') {
+      const picked = await this.pickExportDir();
+      if (picked === 'cancelled') return;
+      if (picked === 'unavailable') {
+        this.props.showSnack(t('batch.zipFallback'));
+        await this.downloadZip();
         return;
       }
+      mode = picked;
     }
 
     this.setState({ exporting: true });
     try {
-      for (const item of completed) {
-        const fileHandle = await dir.getFileHandle(item.result!.name, {
-          create: true,
-        });
-        const writable = await fileHandle.createWritable();
-        await writable.write(item.result!);
-        await writable.close();
+      if (mode === 'native') {
+        await this.exportViaShell(completed);
+      } else {
+        await this.exportViaBrowser(completed);
       }
       this.props.showSnack(
-        t('batch.exported', { count: completed.length, dir: dir.name }),
+        t('batch.exported', {
+          count: completed.length,
+          dir: this.state.exportDirName || '',
+        }),
       );
     } catch {
       this.props.showSnack(t('batch.exportFailed'));
@@ -539,7 +584,6 @@ export default class Batch extends Component<Props, State> {
 
     const canRun = !running && (settingsDirty || pending > 0);
     const canExport = !exporting && done.length > 0;
-    const supportsFolders = Boolean(directoryPicker());
 
     return (
       <div style={styles.page}>
@@ -647,9 +691,7 @@ export default class Batch extends Component<Props, State> {
               >
                 <span style={styles.pathLabel}>{t('batch.exportTo')}</span>
                 <span style={styles.pathValue}>
-                  {supportsFolders
-                    ? exportDirName || t('batch.noFolder')
-                    : t('batch.folderUnsupported')}
+                  {exportDirName || t('batch.noFolder')}
                 </span>
               </button>
               <button

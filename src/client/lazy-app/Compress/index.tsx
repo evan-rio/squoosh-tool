@@ -460,7 +460,7 @@ export default class Compress extends Component<Props, State> {
         sides: cleanSet(this.state.sides, index, newRightSideSettings),
       });
       const result = await this.props.showSnack(
-        'Right side settings imported',
+        t('editor.snack.rightImported'),
         {
           timeout: 3000,
           actions: ['undo', 'dismiss'],
